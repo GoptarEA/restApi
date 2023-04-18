@@ -4,8 +4,8 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+import base64
 
-from waitress import serve
 
 
 app = Flask(__name__)
@@ -48,9 +48,24 @@ class User(db.Model):
         self.group = group
         self.birth_date = birth_date
 
+class Food(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), unique=True, nullable=False)
+    image_name = db.Column(db.String(20), nullable=False)
 
 
+# import base64
+# with open("my_image.jpg", "rb") as img_file:
+#     my_string = base64.b64encode(img_file.read())
+# print(my_string)
 
+@app.route('/api/v1/images', methods=["POST", "GET"])
+def images():
+    img = dict()
+    foods = [food for food in Food.query.all()]
+    for item in foods:
+        img[item.name] = base64.b64encode(open("./images/" + item.image_name, "rb").read())
+    return str(img)
 
 @app.route('/api/v1/register', methods=["POST", "GET"])
 def register():
@@ -93,4 +108,4 @@ def auth():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=90)
+    app.run(host='0.0.0.0', port=80)
