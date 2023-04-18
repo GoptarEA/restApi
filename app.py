@@ -52,20 +52,57 @@ class Food(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), unique=True, nullable=False)
     image_name = db.Column(db.String(20), nullable=False)
+    category = db.Column(db.String(20), nullable=False)
 
 
-# import base64
-# with open("my_image.jpg", "rb") as img_file:
-#     my_string = base64.b64encode(img_file.read())
-# print(my_string)
+class Orders(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    person_email = db.Column(db.String(20), unique=False, nullable=False)
+    school = db.Column(db.String(20), unique=False, nullable=False)
+    products = db.Column(db.String(500), nullable=False)
+
+    def __init__(self, person_email, school, products):
+        self.person_email = person_email
+        self.school = school
+        self.products = products
 
 @app.route('/api/v1/images', methods=["POST", "GET"])
 def images():
     img = dict()
     foods = [food for food in Food.query.all()]
     for item in foods:
-        img[item.name] = base64.b64encode(open("./images/" + item.image_name, "rb").read())
+        img[item.name] = [item.category, base64.b64encode(open("./images/" + item.image_name, "rb").read())]
     return str(img)
+
+@app.route('/api/v1/cart', methods=["POST", "GET"])
+def cart():
+    args = request.args.to_dict()
+    print(args)
+    try:
+        order = Orders(args["email"], args["school"], args["cart"])
+        db.session.add(order)
+        db.session.flush()
+        db.session.commit()
+        return "seccessfully added to cart"
+    except Exception:
+        return "Sorry, something went wrong. Try again later."
+
+
+@app.route('/api/v1/school_orders', methods=["POST", "GET"])
+def school_orders():
+    school = request.args.get("school")
+    orders = [order for order in Orders.query.all() if order.school == school]
+    products = dict()
+    for elem in orders:
+        for item in elem.products.split():
+            if item in products:
+                products[item] += 1
+            else:
+                products[item] = 1
+
+    print(orders[0].products)
+    return str(products)
+
 
 @app.route('/api/v1/register', methods=["POST", "GET"])
 def register():
